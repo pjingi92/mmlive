@@ -74,7 +74,6 @@ export default function BookingPage() {
   const [hours, setHours] = useState(1);
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
 
   const today = startOfDay(new Date());
 
@@ -181,19 +180,6 @@ export default function BookingPage() {
 
   useEffect(() => {
     fetchCalendarSettings();
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
   }, []);
 
   const scheduleMap = useMemo(() => {
@@ -403,17 +389,8 @@ export default function BookingPage() {
                 : "관리자 설정에 따라 휴무일과 일부 차단 시간이 자동 반영됩니다."}
             </div>
 
-            <div className="booking-dark-calendar overflow-x-auto">
-              <div
-                style={
-                  isMobile
-                    ? {
-                        transform: "scale(0.86)",
-                        transformOrigin: "top center",
-                      }
-                    : undefined
-                }
-              >
+            <div className="booking-dark-calendar overflow-hidden">
+              <div className="mx-auto w-full max-w-[340px] sm:max-w-none">
                 <DayPicker
                   mode="single"
                   selected={selected}
@@ -434,18 +411,18 @@ export default function BookingPage() {
                     months: "flex justify-center",
                     month: "w-full",
                     month_caption:
-                      "mb-6 flex items-center justify-between text-white",
-                    caption_label: "text-lg font-semibold sm:text-2xl",
-                    nav: "flex items-center gap-2",
+                      "mb-4 flex items-center justify-between gap-2 text-white sm:mb-6",
+                    caption_label: "text-base font-semibold sm:text-2xl",
+                    nav: "flex items-center gap-1 sm:gap-2",
                     button_previous:
-                      "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
+                      "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                     button_next:
-                      "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
+                      "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                     weekdays: "mb-2",
                     weekday:
-                      "text-xs sm:text-sm font-medium text-white/45 pb-2",
+                      "text-[11px] sm:text-sm font-medium text-white/45 pb-2",
                     week: "mt-1 sm:mt-2",
-                    day: "p-1 sm:p-2",
+                    day: "p-0.5 sm:p-2",
                     selected: "selected-day",
                     today: "today-day",
                   }}
