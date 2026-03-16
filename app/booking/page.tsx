@@ -341,7 +341,7 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <section className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
+      <section className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
             <Link
@@ -367,7 +367,7 @@ export default function BookingPage() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-4 shadow-2xl sm:p-6 md:p-8">
+          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-3 shadow-2xl sm:p-6 md:p-8">
             <div className="mb-5 flex flex-wrap gap-2 sm:gap-3">
               <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-300 sm:text-sm">
                 예약 가능
@@ -383,56 +383,54 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/60 sm:text-sm">
+            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60 sm:px-4 sm:text-sm">
               {loading
                 ? "예약 가능 일정을 불러오는 중입니다..."
                 : "관리자 설정에 따라 휴무일과 일부 차단 시간이 자동 반영됩니다."}
             </div>
 
             <div className="booking-dark-calendar overflow-hidden">
-              <div className="mx-auto w-full max-w-[340px] sm:max-w-none">
-                <DayPicker
-                  mode="single"
-                  selected={selected}
-                  onSelect={handleSelectDate}
-                  locale={ko}
-                  showOutsideDays
-                  defaultMonth={new Date()}
-                  disabled={disabledDays}
-                  modifiers={modifiers}
-                  modifiersClassNames={{
-                    available: "booking-available",
-                    partial: "booking-partial",
-                    closed: "booking-closed",
-                    holiday: "booking-holiday",
-                  }}
-                  className="w-full"
-                  classNames={{
-                    months: "flex justify-center",
-                    month: "w-full",
-                    month_caption:
-                      "mb-4 flex items-center justify-between gap-2 text-white sm:mb-6",
-                    caption_label: "text-base font-semibold sm:text-2xl",
-                    nav: "flex items-center gap-1 sm:gap-2",
-                    button_previous:
-                      "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
-                    button_next:
-                      "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
-                    weekdays: "mb-2",
-                    weekday:
-                      "text-[11px] sm:text-sm font-medium text-white/45 pb-2",
-                    week: "mt-1 sm:mt-2",
-                    day: "p-0.5 sm:p-2",
-                    selected: "selected-day",
-                    today: "today-day",
-                  }}
-                  footer={
-                    <p className="pt-5 text-center text-xs text-white/40 sm:text-sm">
-                      지난 날짜 / 마감 / 휴무 날짜는 선택할 수 없습니다.
-                    </p>
-                  }
-                />
-              </div>
+              <DayPicker
+                mode="single"
+                selected={selected}
+                onSelect={handleSelectDate}
+                locale={ko}
+                showOutsideDays
+                defaultMonth={new Date()}
+                disabled={disabledDays}
+                modifiers={modifiers}
+                modifiersClassNames={{
+                  available: "booking-available",
+                  partial: "booking-partial",
+                  closed: "booking-closed",
+                  holiday: "booking-holiday",
+                }}
+                className="w-full"
+                classNames={{
+                  months: "flex justify-center",
+                  month: "w-full",
+                  month_caption:
+                    "mb-4 flex items-center justify-between text-white sm:mb-6",
+                  caption_label: "text-base font-semibold sm:text-2xl",
+                  nav: "flex items-center gap-1 sm:gap-2",
+                  button_previous:
+                    "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
+                  button_next:
+                    "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
+                  weekdays: "mb-1 sm:mb-2",
+                  weekday:
+                    "pb-2 text-[11px] font-medium text-white/45 sm:text-sm",
+                  week: "mt-1 sm:mt-2",
+                  day: "p-0.5 sm:p-2",
+                  selected: "selected-day",
+                  today: "today-day",
+                }}
+                footer={
+                  <p className="pt-5 text-center text-xs text-white/40 sm:text-sm">
+                    지난 날짜 / 마감 / 휴무 날짜는 선택할 수 없습니다.
+                  </p>
+                }
+              />
             </div>
           </div>
 
