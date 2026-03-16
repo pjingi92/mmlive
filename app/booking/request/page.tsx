@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type PreviewType = "image" | "video" | "";
@@ -58,7 +58,7 @@ function getRangeTimes(startTime: string, hours: number) {
   ) as string[];
 }
 
-export default function BookingRequestPage() {
+function BookingRequestPageContent() {
   const searchParams = useSearchParams();
 
   const selectedDateFromCalendar = searchParams.get("date") || "";
@@ -271,7 +271,6 @@ export default function BookingRequestPage() {
       return;
     }
 
-    // 첫 칸 다시 누르면 앞에서 1칸 제거
     if (clickedIndex === currentStartIndex) {
       const nextStart = timeOptions[currentStartIndex + 1];
 
@@ -285,7 +284,6 @@ export default function BookingRequestPage() {
       return;
     }
 
-    // 마지막 칸 다시 누르면 뒤에서 1칸 제거
     if (clickedIndex === currentEndIndex) {
       if (hours <= 1) {
         clearTimeSelection();
@@ -296,14 +294,11 @@ export default function BookingRequestPage() {
       return;
     }
 
-    // 현재 범위 안의 중간 시간 클릭 시:
-    // 클릭한 시간까지로 범위 축소
     if (clickedIndex > currentStartIndex && clickedIndex < currentEndIndex) {
       setHours(clickedIndex - currentStartIndex + 1);
       return;
     }
 
-    // 범위 밖 클릭 시 새 범위 확장/재설정
     const fromIndex = Math.min(currentStartIndex, clickedIndex);
     const toIndex = Math.max(currentStartIndex, clickedIndex);
     const proposedLength = toIndex - fromIndex + 1;
@@ -1522,6 +1517,53 @@ export default function BookingRequestPage() {
         </div>
       )}
     </main>
+  );
+}
+
+function BookingRequestPageFallback() {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f5f5f3",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        fontFamily: "sans-serif",
+        color: "#111",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 640,
+          backgroundColor: "#fff",
+          borderRadius: 24,
+          padding: 32,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+          textAlign: "center",
+        }}
+      >
+        <p
+          style={{
+            fontSize: 14,
+            color: "#666",
+            margin: 0,
+          }}
+        >
+          예약 신청 페이지를 불러오는 중입니다...
+        </p>
+      </div>
+    </main>
+  );
+}
+
+export default function BookingRequestPage() {
+  return (
+    <Suspense fallback={<BookingRequestPageFallback />}>
+      <BookingRequestPageContent />
+    </Suspense>
   );
 }
 
