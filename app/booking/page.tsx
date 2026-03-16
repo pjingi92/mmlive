@@ -74,7 +74,6 @@ export default function BookingPage() {
   const [hours, setHours] = useState(1);
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
 
   const today = startOfDay(new Date());
 
@@ -181,19 +180,6 @@ export default function BookingPage() {
 
   useEffect(() => {
     fetchCalendarSettings();
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
   }, []);
 
   const scheduleMap = useMemo(() => {
@@ -403,63 +389,52 @@ export default function BookingPage() {
                 : "관리자 설정에 따라 휴무일과 일부 차단 시간이 자동 반영됩니다."}
             </div>
 
-            <div
-              className="booking-dark-calendar overflow-x-auto"
-              style={isMobile ? { WebkitOverflowScrolling: "touch" } : undefined}
-            >
-              <div
-                style={
-                  isMobile
-                    ? {
-                        minWidth: "340px",
-                        width: "340px",
-                        margin: "0 auto",
-                      }
-                    : undefined
+            <div className="booking-dark-calendar overflow-hidden">
+              <DayPicker
+                mode="single"
+                selected={selected}
+                onSelect={handleSelectDate}
+                locale={ko}
+                showOutsideDays
+                defaultMonth={new Date()}
+                disabled={disabledDays}
+                modifiers={modifiers}
+                modifiersClassNames={{
+                  available: "booking-available",
+                  partial: "booking-partial",
+                  closed: "booking-closed",
+                  holiday: "booking-holiday",
+                }}
+                className="w-full"
+                classNames={{
+                  months: "flex justify-center",
+                  month: "w-full",
+                  month_caption:
+                    "relative mb-4 flex items-center justify-center px-12 text-white sm:mb-6",
+                  caption_label:
+                    "text-base font-semibold sm:text-2xl",
+                  nav: "absolute inset-y-0 left-0 right-0 flex items-center justify-between",
+                  button_previous:
+                    "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 sm:h-10 sm:w-10",
+                  button_next:
+                    "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 sm:h-10 sm:w-10",
+                  month_grid: "w-full border-collapse",
+                  weekdays: "grid grid-cols-7 mb-1 sm:mb-2",
+                  weekday:
+                    "pb-2 text-center text-[11px] font-medium text-white/45 sm:text-sm",
+                  week: "mt-1 grid grid-cols-7 sm:mt-2",
+                  day: "p-0 text-center",
+                  day_button:
+                    "h-10 w-full rounded-xl text-sm transition hover:bg-white/10 sm:h-12 sm:text-base",
+                  selected: "selected-day",
+                  today: "today-day",
+                }}
+                footer={
+                  <p className="pt-5 text-center text-xs text-white/40 sm:text-sm">
+                    지난 날짜 / 마감 / 휴무 날짜는 선택할 수 없습니다.
+                  </p>
                 }
-              >
-                <DayPicker
-                  mode="single"
-                  selected={selected}
-                  onSelect={handleSelectDate}
-                  locale={ko}
-                  showOutsideDays
-                  defaultMonth={new Date()}
-                  disabled={disabledDays}
-                  modifiers={modifiers}
-                  modifiersClassNames={{
-                    available: "booking-available",
-                    partial: "booking-partial",
-                    closed: "booking-closed",
-                    holiday: "booking-holiday",
-                  }}
-                  className="w-full"
-                  classNames={{
-                    months: "flex justify-center",
-                    month: "w-full",
-                    month_caption:
-                      "mb-6 flex items-center justify-between text-white",
-                    caption_label: "text-lg font-semibold sm:text-2xl",
-                    nav: "flex items-center gap-2",
-                    button_previous:
-                      "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
-                    button_next:
-                      "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
-                    weekdays: "mb-2",
-                    weekday:
-                      "text-xs sm:text-sm font-medium text-white/45 pb-2",
-                    week: "mt-1 sm:mt-2",
-                    day: "p-1 sm:p-2",
-                    selected: "selected-day",
-                    today: "today-day",
-                  }}
-                  footer={
-                    <p className="pt-5 text-center text-xs text-white/40 sm:text-sm">
-                      지난 날짜 / 마감 / 휴무 날짜는 선택할 수 없습니다.
-                    </p>
-                  }
-                />
-              </div>
+              />
             </div>
           </div>
 
