@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { DayPicker, type Modifiers } from "react-day-picker";
+import { DayPicker } from "react-day-picker";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -204,7 +204,7 @@ export default function BookingPage() {
 
   const disabledDays = [...closedDates, ...holidayDates, { before: today }];
 
-  const modifiers: Modifiers = {
+  const modifiers = {
     available: availableDates,
     partial: partialDates,
     closed: closedDates,
