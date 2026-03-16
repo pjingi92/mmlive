@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { DayPicker, type Modifiers } from "react-day-picker";
+import { DayPicker } from "react-day-picker";
 import { format, startOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -273,7 +273,7 @@ export default function AdminCalendarPage() {
       .map((item) => new Date(item.date));
   }, [daySummaryMap]);
 
-  const modifiers: Modifiers = {
+  const modifiers = {
     adminHoliday: holidayDates,
     adminPartial: partialDates,
     adminReserved: reservationDates,
@@ -561,7 +561,7 @@ export default function AdminCalendarPage() {
                 onSelect={handleSelectDate}
                 locale={ko}
                 showOutsideDays
-                defaultMonth={new Date()}
+                defaultMonth={new Date() }
                 disabled={{ before: today }}
                 modifiers={modifiers}
                 modifiersClassNames={{
