@@ -142,7 +142,7 @@ export default function BookingRequestPage() {
     selectedHoursFromCalendar,
   ]);
 
-  async function fetchDiscountCodesStrict() {
+  async function fetchDiscountCodesStrict(): Promise<ActiveDiscountCode[]> {
     const res = await fetch("/api/discount-settings", {
       cache: "no-store",
     });
@@ -153,10 +153,11 @@ export default function BookingRequestPage() {
       throw new Error(data?.message || "할인코드 정보를 불러오지 못했습니다.");
     }
 
-    return Array.isArray(data.codes) ? data.codes : [];
+    const codes: ActiveDiscountCode[] = Array.isArray(data.codes) ? data.codes : [];
+    return codes;
   }
 
-  async function fetchDiscountCodesSilent() {
+  async function fetchDiscountCodesSilent(): Promise<ActiveDiscountCode[]> {
     try {
       const res = await fetch("/api/discount-settings", {
         cache: "no-store",
@@ -172,7 +173,8 @@ export default function BookingRequestPage() {
         return [];
       }
 
-      return Array.isArray(data.codes) ? data.codes : [];
+      const codes: ActiveDiscountCode[] = Array.isArray(data.codes) ? data.codes : [];
+      return codes;
     } catch (error) {
       console.warn("[discount-settings] silent fetch error:", error);
       return [];
@@ -197,7 +199,7 @@ export default function BookingRequestPage() {
 
       if (appliedDiscountCode) {
         const stillValid = codes.find(
-          (item: any) => item.code === appliedDiscountCode
+          (item) => item.code === appliedDiscountCode
         );
 
         if (!stillValid) {
