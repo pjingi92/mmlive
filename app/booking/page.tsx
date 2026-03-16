@@ -191,9 +191,7 @@ export default function BookingPage() {
     handleResize();
     window.addEventListener("resize", handleResize);
 
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const scheduleMap = useMemo(() => {
@@ -420,28 +418,71 @@ export default function BookingPage() {
                   holiday: "booking-holiday",
                 }}
                 className="w-full max-w-full"
-                style={
+                styles={
                   isMobile
-                    ? ({
-                        width: "100%",
-                        maxWidth: "100%",
-                        ["--rdp-day-width" as string]: "36px",
-                        ["--rdp-day-height" as string]: "36px",
-                        ["--rdp-day_button-width" as string]: "36px",
-                        ["--rdp-day_button-height" as string]: "36px",
-                        ["--rdp-nav_button-width" as string]: "32px",
-                        ["--rdp-nav_button-height" as string]: "32px",
-                        ["--rdp-weekday-padding" as string]: "0px",
-                        ["--rdp-months-gap" as string]: "0px",
-                      } as React.CSSProperties)
+                    ? {
+                        months: { width: "100%" },
+                        month: { width: "100%" },
+                        month_grid: {
+                          width: "100%",
+                          maxWidth: "100%",
+                          tableLayout: "fixed",
+                          borderCollapse: "collapse",
+                        },
+                        weekdays: { width: "100%" },
+                        weekday: {
+                          width: "14.2857%",
+                          padding: "0 0 6px 0",
+                          fontSize: "10px",
+                          textAlign: "center",
+                        },
+                        week: { width: "100%" },
+                        day: {
+                          width: "14.2857%",
+                          padding: "1px",
+                          textAlign: "center",
+                        },
+                        day_button: {
+                          width: "100%",
+                          maxWidth: "100%",
+                          height: "34px",
+                          fontSize: "12px",
+                          borderRadius: "10px",
+                          margin: "0 auto",
+                        },
+                        month_caption: {
+                          marginBottom: "12px",
+                        },
+                        caption_label: {
+                          fontSize: "15px",
+                          fontWeight: "600",
+                        },
+                        nav: {
+                          gap: "4px",
+                        },
+                        button_previous: {
+                          width: "32px",
+                          height: "32px",
+                          minWidth: "32px",
+                          minHeight: "32px",
+                          padding: "0",
+                        },
+                        button_next: {
+                          width: "32px",
+                          height: "32px",
+                          minWidth: "32px",
+                          minHeight: "32px",
+                          padding: "0",
+                        },
+                      }
                     : undefined
                 }
                 classNames={{
                   months: "flex justify-center",
-                  month: "w-full max-w-full min-w-0",
+                  month: "w-full min-w-0",
                   month_caption:
                     "mb-4 flex items-center justify-between text-white sm:mb-6",
-                  caption_label: "text-sm font-semibold sm:text-2xl",
+                  caption_label: "text-base font-semibold sm:text-2xl",
                   nav: "flex items-center gap-1 sm:gap-2",
                   button_previous:
                     "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
@@ -449,7 +490,7 @@ export default function BookingPage() {
                     "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                   weekdays: "mb-1 sm:mb-2",
                   weekday:
-                    "pb-2 text-[10px] font-medium text-white/45 sm:text-sm",
+                    "pb-2 text-[11px] font-medium text-white/45 sm:text-sm",
                   week: "mt-1 sm:mt-2",
                   day: "p-0 sm:p-2",
                   selected: "selected-day",
