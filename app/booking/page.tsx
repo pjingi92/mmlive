@@ -367,7 +367,7 @@ export default function BookingPage() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-4 shadow-2xl sm:p-6 md:p-8">
+          <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#111111] p-4 shadow-2xl sm:p-6 md:p-8">
             <div className="mb-5 flex flex-wrap gap-2 sm:gap-3">
               <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-300 sm:text-sm">
                 예약 가능
@@ -389,7 +389,7 @@ export default function BookingPage() {
                 : "관리자 설정에 따라 휴무일과 일부 차단 시간이 자동 반영됩니다."}
             </div>
 
-            <div className="booking-dark-calendar overflow-x-auto">
+            <div className="booking-dark-calendar">
               <DayPicker
                 mode="single"
                 selected={selected}
@@ -407,26 +407,32 @@ export default function BookingPage() {
                 }}
                 className="w-full"
                 classNames={{
-                  months: "flex justify-center",
-                  month: "w-full",
+                  root: "w-full",
+                  months: "flex justify-center w-full",
+                  month: "w-full max-w-full",
+                  month_grid: "w-full border-separate",
                   month_caption:
-                    "mb-6 flex items-center justify-between text-white",
-                  caption_label: "text-lg font-semibold sm:text-2xl",
+                    "mb-4 flex items-center justify-between text-white sm:mb-6",
+                  caption_label: "text-base font-semibold sm:text-2xl",
                   nav: "flex items-center gap-2",
                   button_previous:
-                    "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
+                    "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                   button_next:
-                    "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
-                  weekdays: "mb-2",
+                    "h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
+                  weekdays: "mb-1 sm:mb-2",
                   weekday:
-                    "text-xs sm:text-sm font-medium text-white/45 pb-2",
+                    "text-[11px] sm:text-sm font-medium text-white/45 pb-2",
                   week: "mt-1 sm:mt-2",
-                  day: "p-1 sm:p-2",
+                  day: "p-0",
+                  day_button:
+                    "h-10 w-10 rounded-xl text-xs transition sm:h-12 sm:w-12 sm:text-sm",
                   selected: "selected-day",
                   today: "today-day",
+                  outside: "text-white/20",
+                  disabled: "text-white/20 opacity-40",
                 }}
                 footer={
-                  <p className="pt-5 text-center text-xs text-white/40 sm:text-sm">
+                  <p className="pt-4 text-center text-[11px] text-white/40 sm:pt-5 sm:text-sm">
                     지난 날짜 / 마감 / 휴무 날짜는 선택할 수 없습니다.
                   </p>
                 }
@@ -614,6 +620,120 @@ export default function BookingPage() {
           </div>
         </div>
       </section>
+
+      <style jsx global>{`
+        .booking-dark-calendar .rdp-root {
+          --rdp-cell-size: 48px;
+          --rdp-accent-color: #ffffff;
+          --rdp-background-color: rgba(255, 255, 255, 0.08);
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .booking-dark-calendar .rdp-months,
+        .booking-dark-calendar .rdp-month,
+        .booking-dark-calendar .rdp-month_grid {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .booking-dark-calendar .rdp-table,
+        .booking-dark-calendar table {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: separate;
+        }
+
+        .booking-dark-calendar .rdp-weekday,
+        .booking-dark-calendar .rdp-day {
+          width: calc(100% / 7);
+          max-width: calc(100% / 7);
+          text-align: center;
+        }
+
+        .booking-dark-calendar .rdp-day_button {
+          margin: 0 auto;
+        }
+
+        .booking-available .rdp-day_button,
+        .booking-available button {
+          border: 1px solid rgba(52, 211, 153, 0.35) !important;
+          background: rgba(16, 185, 129, 0.1) !important;
+          color: rgb(110, 231, 183) !important;
+        }
+
+        .booking-partial .rdp-day_button,
+        .booking-partial button {
+          border: 1px solid rgba(251, 191, 36, 0.35) !important;
+          background: rgba(251, 191, 36, 0.12) !important;
+          color: rgb(252, 211, 77) !important;
+        }
+
+        .booking-closed .rdp-day_button,
+        .booking-closed button {
+          border: 1px solid rgba(251, 113, 133, 0.35) !important;
+          background: rgba(244, 63, 94, 0.12) !important;
+          color: rgb(253, 164, 175) !important;
+        }
+
+        .booking-holiday .rdp-day_button,
+        .booking-holiday button {
+          border: 1px solid rgba(255, 255, 255, 0.16) !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .booking-dark-calendar .selected-day,
+        .booking-dark-calendar .selected-day .rdp-day_button,
+        .booking-dark-calendar .selected-day button {
+          background: #ffffff !important;
+          color: #000000 !important;
+          border-color: #ffffff !important;
+          font-weight: 700;
+        }
+
+        .booking-dark-calendar .today-day,
+        .booking-dark-calendar .today-day .rdp-day_button,
+        .booking-dark-calendar .today-day button {
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+        }
+
+        @media (max-width: 640px) {
+          .booking-dark-calendar .rdp-root {
+            --rdp-cell-size: 38px;
+          }
+
+          .booking-dark-calendar .rdp-month_caption {
+            margin-bottom: 14px;
+          }
+
+          .booking-dark-calendar .rdp-caption_label {
+            font-size: 15px;
+            line-height: 1.2;
+          }
+
+          .booking-dark-calendar .rdp-nav button {
+            width: 34px;
+            height: 34px;
+          }
+
+          .booking-dark-calendar .rdp-weekday {
+            font-size: 11px;
+            padding-bottom: 6px;
+          }
+
+          .booking-dark-calendar .rdp-day_button {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            font-size: 12px;
+          }
+
+          .booking-dark-calendar .rdp-week {
+            margin-top: 4px;
+          }
+        }
+      `}</style>
     </main>
   );
 }
