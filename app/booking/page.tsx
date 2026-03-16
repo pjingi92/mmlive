@@ -74,6 +74,7 @@ export default function BookingPage() {
   const [hours, setHours] = useState(1);
   const [loading, setLoading] = useState(true);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   const today = startOfDay(new Date());
 
@@ -180,6 +181,19 @@ export default function BookingPage() {
 
   useEffect(() => {
     fetchCalendarSettings();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   const scheduleMap = useMemo(() => {
@@ -340,8 +354,8 @@ export default function BookingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
+    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+      <section className="mx-auto w-full max-w-7xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
             <Link
@@ -367,7 +381,7 @@ export default function BookingPage() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-3 shadow-2xl sm:p-6 md:p-8">
+          <div className="min-w-0 rounded-[28px] border border-white/10 bg-[#111111] p-3 shadow-2xl sm:p-6 md:p-8">
             <div className="mb-5 flex flex-wrap gap-2 sm:gap-3">
               <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-300 sm:text-sm">
                 예약 가능
@@ -389,7 +403,7 @@ export default function BookingPage() {
                 : "관리자 설정에 따라 휴무일과 일부 차단 시간이 자동 반영됩니다."}
             </div>
 
-            <div className="booking-dark-calendar overflow-hidden">
+            <div className="booking-dark-calendar min-w-0 overflow-hidden">
               <DayPicker
                 mode="single"
                 selected={selected}
@@ -405,13 +419,29 @@ export default function BookingPage() {
                   closed: "booking-closed",
                   holiday: "booking-holiday",
                 }}
-                className="w-full"
+                className="w-full max-w-full"
+                style={
+                  isMobile
+                    ? ({
+                        width: "100%",
+                        maxWidth: "100%",
+                        ["--rdp-day-width" as string]: "36px",
+                        ["--rdp-day-height" as string]: "36px",
+                        ["--rdp-day_button-width" as string]: "36px",
+                        ["--rdp-day_button-height" as string]: "36px",
+                        ["--rdp-nav_button-width" as string]: "32px",
+                        ["--rdp-nav_button-height" as string]: "32px",
+                        ["--rdp-weekday-padding" as string]: "0px",
+                        ["--rdp-months-gap" as string]: "0px",
+                      } as React.CSSProperties)
+                    : undefined
+                }
                 classNames={{
                   months: "flex justify-center",
-                  month: "w-full",
+                  month: "w-full max-w-full min-w-0",
                   month_caption:
                     "mb-4 flex items-center justify-between text-white sm:mb-6",
-                  caption_label: "text-base font-semibold sm:text-2xl",
+                  caption_label: "text-sm font-semibold sm:text-2xl",
                   nav: "flex items-center gap-1 sm:gap-2",
                   button_previous:
                     "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
@@ -419,9 +449,9 @@ export default function BookingPage() {
                     "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                   weekdays: "mb-1 sm:mb-2",
                   weekday:
-                    "pb-2 text-[11px] font-medium text-white/45 sm:text-sm",
+                    "pb-2 text-[10px] font-medium text-white/45 sm:text-sm",
                   week: "mt-1 sm:mt-2",
-                  day: "p-0.5 sm:p-2",
+                  day: "p-0 sm:p-2",
                   selected: "selected-day",
                   today: "today-day",
                 }}
@@ -434,7 +464,7 @@ export default function BookingPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-5 shadow-2xl sm:p-6">
+          <div className="min-w-0 rounded-[28px] border border-white/10 bg-[#111111] p-5 shadow-2xl sm:p-6">
             <h2 className="text-lg font-semibold sm:text-xl">선택한 일정</h2>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5">
