@@ -197,7 +197,7 @@ export default function BookingRequestPage() {
 
       if (appliedDiscountCode) {
         const stillValid = codes.find(
-          (item) => item.code === appliedDiscountCode
+          (item: any) => item.code === appliedDiscountCode
         );
 
         if (!stillValid) {
