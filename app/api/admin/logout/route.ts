@@ -1,12 +1,21 @@
+import { NextResponse } from "next/server";
+
+const COOKIE_NAME = "admin_auth";
+
 export async function POST() {
-  const response = Response.json({
+  const response = NextResponse.json({
     success: true,
   });
 
-  response.headers.append(
-    "Set-Cookie",
-    "admin_auth=; Path=/; SameSite=Lax; Max-Age=0"
-  );
+  response.cookies.set({
+    name: COOKIE_NAME,
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
 
   return response;
 }

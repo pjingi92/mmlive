@@ -1,5 +1,8 @@
 import { google } from "googleapis";
 import nodemailer from "nodemailer";
+import crypto from "node:crypto";
+
+const COOKIE_NAME = "admin_auth";
 
 function normalizeEmail(value: unknown) {
   if (typeof value !== "string") return "";
@@ -46,6 +49,92 @@ function buildTimeRange(startTime: string, hours: number) {
   return `${safeStartTime}~${endTime}`;
 }
 
+function toBase64(value: string) {
+  return value.replace(/-/g, "+").replace(/_/g, "/");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = toBase64(value);
+  const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+  return Buffer.from(normalized + padding, "base64").toString("utf-8");
+}
+
+function toBase64Url(value: Buffer | string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function verifySignedToken(token: string, secret: string) {
+  try {
+    const parts = token.split(".");
+
+    if (parts.length !== 2) {
+      return false;
+    }
+
+    const [payloadBase64, signatureBase64] = parts;
+
+    if (!payloadBase64 || !signatureBase64) {
+      return false;
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payloadBase64)
+      .digest();
+
+    const expectedSignatureBase64 = toBase64Url(expectedSignature);
+
+    const expectedBuffer = Buffer.from(expectedSignatureBase64);
+    const actualBuffer = Buffer.from(signatureBase64);
+
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+
+    if (!crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return false;
+    }
+
+    const payloadText = decodeBase64Url(payloadBase64);
+    const payload = JSON.parse(payloadText);
+
+    if (payload?.role !== "admin") {
+      return false;
+    }
+
+    if (typeof payload?.exp !== "number") {
+      return false;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp < now) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCookieValue(cookieHeader: string, cookieName: string) {
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(`${cookieName}=`)) {
+      return decodeURIComponent(trimmed.slice(cookieName.length + 1));
+    }
+  }
+
+  return "";
+}
+
 type ReservationStatus =
   | "대기"
   | "확정"
@@ -54,19 +143,39 @@ type ReservationStatus =
   | "종료"
   | "취소";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const reservationNumber = searchParams.get("no");
-    const status = searchParams.get("status") as ReservationStatus | null;
+    const cookieHeader = req.headers.get("cookie") || "";
+    const token = getCookieValue(cookieHeader, COOKIE_NAME);
+    const sessionSecret = String(process.env.ADMIN_SESSION_SECRET || "").trim();
 
-    console.log("[GET /api/reservation-status] 시작", {
+    if (!sessionSecret || !verifySignedToken(token, sessionSecret)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+    const reservationNumber = String(body?.no || "").trim();
+    const status = String(body?.status || "").trim() as ReservationStatus;
+
+    console.log("[POST /api/reservation-status] 시작", {
       reservationNumber,
       status,
     });
 
     if (!reservationNumber || !status) {
-      return new Response("잘못된 요청입니다.", { status: 400 });
+      return Response.json(
+        {
+          success: false,
+          message: "잘못된 요청입니다.",
+        },
+        { status: 400 }
+      );
     }
 
     const allowedStatuses: ReservationStatus[] = [
@@ -79,7 +188,13 @@ export async function GET(req: Request) {
     ];
 
     if (!allowedStatuses.includes(status)) {
-      return new Response("허용되지 않은 상태값입니다.", { status: 400 });
+      return Response.json(
+        {
+          success: false,
+          message: "허용되지 않은 상태값입니다.",
+        },
+        { status: 400 }
+      );
     }
 
     const auth = new google.auth.GoogleAuth({
@@ -108,7 +223,13 @@ export async function GET(req: Request) {
     const rowIndex = rows.findIndex((row) => row[0] === reservationNumber);
 
     if (rowIndex === -1) {
-      return new Response("예약번호를 찾을 수 없습니다.", { status: 404 });
+      return Response.json(
+        {
+          success: false,
+          message: "예약번호를 찾을 수 없습니다.",
+        },
+        { status: 404 }
+      );
     }
 
     const row = rows[rowIndex];
@@ -143,7 +264,7 @@ export async function GET(req: Request) {
       },
     });
 
-    console.log("[GET /api/reservation-status] 시트 상태 변경 완료", {
+    console.log("[POST /api/reservation-status] 시트 상태 변경 완료", {
       reservationNumber,
       status,
       actualRowNumber,
@@ -228,62 +349,31 @@ export async function GET(req: Request) {
         html,
       });
 
-      console.log("[GET /api/reservation-status] 고객 메일 발송 완료", {
+      console.log("[POST /api/reservation-status] 고객 메일 발송 완료", {
         email,
         status,
         timeRange,
       });
     }
 
-    return new Response(
-      `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>예약 처리 완료</title>
-        </head>
-        <body style="font-family: sans-serif; padding: 40px; line-height: 1.8;">
-          <h2>예약 처리가 완료되었습니다.</h2>
-          <p><strong>예약번호:</strong> ${reservationNumber}</p>
-          <p><strong>변경 상태:</strong> ${status}</p>
-          <p>${
-            shouldSendMail
-              ? "구글 시트 상태가 업데이트되었고 고객에게도 안내 메일이 발송되었습니다."
-              : "구글 시트 상태가 업데이트되었습니다."
-          }</p>
-        </body>
-      </html>
-      `,
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-        },
-      }
-    );
+    return Response.json({
+      success: true,
+      message: shouldSendMail
+        ? "구글 시트 상태가 업데이트되었고 고객에게도 안내 메일이 발송되었습니다."
+        : "구글 시트 상태가 업데이트되었습니다.",
+      reservationNumber,
+      status,
+    });
   } catch (error: any) {
-    console.error("[GET /api/reservation-status] 오류:", error);
-    console.error("[GET /api/reservation-status] 메시지:", error?.message);
+    console.error("[POST /api/reservation-status] 오류:", error);
+    console.error("[POST /api/reservation-status] 메시지:", error?.message);
 
-    return new Response(
-      `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>오류</title>
-        </head>
-        <body style="font-family: sans-serif; padding: 40px; line-height: 1.8;">
-          <h2>처리 중 오류가 발생했습니다.</h2>
-          <p>${error?.message || "잠시 후 다시 시도해주세요."}</p>
-        </body>
-      </html>
-      `,
+    return Response.json(
       {
-        status: 500,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-        },
-      }
+        success: false,
+        message: error?.message || "처리 중 오류가 발생했습니다.",
+      },
+      { status: 500 }
     );
   }
 }

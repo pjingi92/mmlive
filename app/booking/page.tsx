@@ -82,7 +82,7 @@ export default function BookingPage() {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/admin/calendar-settings", {
+      const res = await fetch("/api/calendar-settings", {
         cache: "no-store",
       });
 

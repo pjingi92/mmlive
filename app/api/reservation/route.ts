@@ -59,6 +59,7 @@ async function appendReservationToSheet(data: {
   name: string;
   email: string;
   phone: string;
+  institutionName: string;
   eventName: string;
   eventDate: string;
   startTime: string;
@@ -123,6 +124,7 @@ async function appendReservationToSheet(data: {
   console.log("[appendReservationToSheet] 시트 append 직전", {
     reservationNumber,
     submittedAt,
+    institutionName: data.institutionName || "",
     editText,
     optionSummary,
     timeRange,
@@ -132,7 +134,7 @@ async function appendReservationToSheet(data: {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A:Q`,
+    range: `${sheetName}!A:R`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [
@@ -143,17 +145,18 @@ async function appendReservationToSheet(data: {
           data.name, // D 신청자명
           data.email, // E 이메일
           data.phone, // F 연락처
-          data.eventName, // G 행사명
-          data.eventDate, // H 촬영날짜
-          timeRange, // I 시간
-          `${data.hours}시간`, // J 촬영시간
-          `${data.camera}대`, // K 카메라대수
-          editText, // L 편집
-          optionSummary, // M 옵션
-          `${Number(data.total).toLocaleString()}원`, // N 예상견적(최종금액)
-          data.request || "", // O 요청사항
-          "", // P 관리자메모
-          data.discountCode || "", // Q 할인코드
+          data.institutionName || "", // G 기관명
+          data.eventName, // H 행사명
+          data.eventDate, // I 촬영날짜
+          timeRange, // J 시간
+          `${data.hours}시간`, // K 촬영시간
+          `${data.camera}대`, // L 카메라대수
+          editText, // M 편집
+          optionSummary, // N 옵션
+          `${Number(data.total).toLocaleString()}원`, // O 예상견적(최종금액)
+          data.request || "", // P 요청사항
+          "", // Q 관리자메모
+          data.discountCode || "", // R 할인코드
         ],
       ],
     },
@@ -176,6 +179,7 @@ export async function POST(req: Request) {
       name,
       email,
       phone,
+      institutionName,
       eventName,
       eventDate,
       startTime,
@@ -207,6 +211,7 @@ export async function POST(req: Request) {
       name,
       email,
       phone,
+      institutionName,
       eventName,
       eventDate,
       startTime,
@@ -228,6 +233,8 @@ export async function POST(req: Request) {
     const customerEmail = normalizeEmail(email);
     const adminEmail = normalizeEmail(process.env.GMAIL_USER);
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const safeInstitutionName =
+      typeof institutionName === "string" ? institutionName.trim() : "";
 
     console.log("[POST /api/reservation] env check:", {
       customerEmail,
@@ -294,6 +301,7 @@ export async function POST(req: Request) {
       name,
       email: customerEmail,
       phone,
+      institutionName: safeInstitutionName,
       eventName,
       eventDate,
       startTime,
@@ -353,6 +361,7 @@ export async function POST(req: Request) {
         <p><strong>신청자명:</strong> ${name}</p>
         <p><strong>이메일:</strong> ${customerEmail}</p>
         <p><strong>연락처:</strong> ${phone}</p>
+        <p><strong>기관명:</strong> ${safeInstitutionName || "-"}</p>
         <p><strong>행사명:</strong> ${eventName}</p>
         <p><strong>촬영 날짜:</strong> ${eventDate}</p>
         <p><strong>시간:</strong> ${timeRange}</p>
@@ -433,6 +442,7 @@ export async function POST(req: Request) {
         <p>담당자가 내용을 확인한 뒤 입력하신 연락처 또는 이메일로 회신드리겠습니다.</p>
         <hr />
         <p><strong>예약번호:</strong> ${reservationNumber}</p>
+        <p><strong>기관명:</strong> ${safeInstitutionName || "-"}</p>
         <p><strong>행사명:</strong> ${eventName}</p>
         <p><strong>촬영 날짜:</strong> ${eventDate}</p>
         <p><strong>시간:</strong> ${timeRange}</p>

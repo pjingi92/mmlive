@@ -1,4 +1,7 @@
 import { google } from "googleapis";
+import crypto from "node:crypto";
+
+const COOKIE_NAME = "admin_auth";
 
 type DiscountSetting = {
   code: string;
@@ -7,6 +10,92 @@ type DiscountSetting = {
   startDate: string;
   endDate: string;
 };
+
+function toBase64(value: string) {
+  return value.replace(/-/g, "+").replace(/_/g, "/");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = toBase64(value);
+  const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+  return Buffer.from(normalized + padding, "base64").toString("utf-8");
+}
+
+function toBase64Url(value: Buffer | string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function verifySignedToken(token: string, secret: string) {
+  try {
+    const parts = token.split(".");
+
+    if (parts.length !== 2) {
+      return false;
+    }
+
+    const [payloadBase64, signatureBase64] = parts;
+
+    if (!payloadBase64 || !signatureBase64) {
+      return false;
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payloadBase64)
+      .digest();
+
+    const expectedSignatureBase64 = toBase64Url(expectedSignature);
+
+    const expectedBuffer = Buffer.from(expectedSignatureBase64);
+    const actualBuffer = Buffer.from(signatureBase64);
+
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+
+    if (!crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return false;
+    }
+
+    const payloadText = decodeBase64Url(payloadBase64);
+    const payload = JSON.parse(payloadText);
+
+    if (payload?.role !== "admin") {
+      return false;
+    }
+
+    if (typeof payload?.exp !== "number") {
+      return false;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp < now) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCookieValue(cookieHeader: string, cookieName: string) {
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(`${cookieName}=`)) {
+      return decodeURIComponent(trimmed.slice(cookieName.length + 1));
+    }
+  }
+
+  return "";
+}
 
 function normalizeBoolean(value: unknown) {
   const text = String(value || "").trim().toUpperCase();
@@ -69,8 +158,30 @@ async function findDiscountSheetName() {
   return foundTitle;
 }
 
-export async function GET() {
+function requireAdmin(req: Request) {
+  const cookieHeader = req.headers.get("cookie") || "";
+  const token = getCookieValue(cookieHeader, COOKIE_NAME);
+  const sessionSecret = String(process.env.ADMIN_SESSION_SECRET || "").trim();
+
+  if (!sessionSecret || !verifySignedToken(token, sessionSecret)) {
+    return false;
+  }
+
+  return true;
+}
+
+export async function GET(req: Request) {
   try {
+    if (!requireAdmin(req)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
     const { sheets, spreadsheetId } = await getSheetsClient();
     const actualSheetName = await findDiscountSheetName();
     const safeSheetName = escapeSheetName(actualSheetName);
@@ -110,6 +221,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!requireAdmin(req)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const settings = Array.isArray(body?.settings) ? body.settings : [];
 

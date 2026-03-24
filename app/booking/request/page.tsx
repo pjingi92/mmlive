@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type PreviewType = "image" | "video" | "";
+type PreviewType = "image" | "video" | "gallery" | "";
 
 type ActiveDiscountCode = {
   code: string;
@@ -12,6 +12,11 @@ type ActiveDiscountCode = {
   enabled: boolean;
   startDate: string;
   endDate: string;
+};
+
+type GalleryItem = {
+  src: string;
+  title: string;
 };
 
 const MAX_HOURS = 16;
@@ -80,11 +85,13 @@ function BookingRequestPageContent() {
   const [previewType, setPreviewType] = useState<PreviewType>("");
   const [previewSrc, setPreviewSrc] = useState("");
   const [previewTitle, setPreviewTitle] = useState("");
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [institutionName, setInstitutionName] = useState("");
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState(selectedDateFromCalendar);
   const [startTime, setStartTime] = useState(selectedStartTimeFromCalendar);
@@ -342,18 +349,28 @@ function BookingRequestPageContent() {
     setPreviewType("image");
     setPreviewSrc(src);
     setPreviewTitle(title);
+    setGalleryItems([]);
   };
 
   const openVideoPreview = (src: string, title: string) => {
     setPreviewType("video");
     setPreviewSrc(src);
     setPreviewTitle(title);
+    setGalleryItems([]);
+  };
+
+  const openGalleryPreview = (items: GalleryItem[], title: string) => {
+    setPreviewType("gallery");
+    setPreviewTitle(title);
+    setGalleryItems(items);
+    setPreviewSrc("");
   };
 
   const closePreview = () => {
     setPreviewType("");
     setPreviewSrc("");
     setPreviewTitle("");
+    setGalleryItems([]);
   };
 
   const handleApplyDiscountCode = async () => {
@@ -439,6 +456,7 @@ function BookingRequestPageContent() {
           name,
           email,
           phone,
+          institutionName,
           eventName,
           eventDate,
           startTime,
@@ -677,6 +695,17 @@ function BookingRequestPageContent() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={fieldWrap}>
+              <label style={labelStyle}>기관명</label>
+              <input
+                type="text"
+                name="기관명"
+                value={institutionName}
+                onChange={(e) => setInstitutionName(e.target.value)}
                 style={inputStyle}
               />
             </div>
@@ -936,7 +965,7 @@ function BookingRequestPageContent() {
                   <button
                     type="button"
                     onClick={() =>
-                      openImagePreview("/options/camera-1.jpg", "카메라 1대 예시 1")
+                      openImagePreview("/options/camera-1.png", "카메라 1대 예시 1")
                     }
                     style={previewButtonStyle}
                   >
@@ -968,7 +997,19 @@ function BookingRequestPageContent() {
                   <button
                     type="button"
                     onClick={() =>
-                      openImagePreview("/options/camera-2.jpg", "카메라 2대 예시 2")
+                      openGalleryPreview(
+                        [
+                          {
+                            src: "/options/camera-2-1.png",
+                            title: "카메라 2대 예시 1",
+                          },
+                          {
+                            src: "/options/camera-2-2.png",
+                            title: "카메라 2대 예시 2",
+                          },
+                        ],
+                        "카메라 2대 예시"
+                      )
                     }
                     style={previewButtonStyle}
                   >
@@ -1051,7 +1092,7 @@ function BookingRequestPageContent() {
                   <button
                     type="button"
                     onClick={() =>
-                      openImagePreview("/options/pip.jpg", "PIP 디자인 예시")
+                      openImagePreview("/options/pip.png", "PIP 디자인 예시")
                     }
                     style={previewButtonStyle}
                   >
@@ -1080,7 +1121,7 @@ function BookingRequestPageContent() {
                     type="button"
                     onClick={() =>
                       openVideoPreview(
-                        "https://www.youtube.com/embed/Iaip0_tIykI",
+                        "https://www.youtube.com/embed/GnbDIl0qORU",
                         "행사 인트로 예시 영상"
                       )
                     }
@@ -1439,7 +1480,12 @@ function BookingRequestPageContent() {
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: previewType === "video" ? "1100px" : "1200px",
+              maxWidth:
+                previewType === "video"
+                  ? "1100px"
+                  : previewType === "gallery"
+                  ? "1280px"
+                  : "1200px",
             }}
           >
             <button
@@ -1485,6 +1531,58 @@ function BookingRequestPageContent() {
                   backgroundColor: "#111",
                 }}
               />
+            )}
+
+            {previewType === "gallery" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: 16,
+                }}
+              >
+                {galleryItems.map((item, index) => (
+                  <button
+                    key={`${item.src}-${index}`}
+                    type="button"
+                    onClick={() => openImagePreview(item.src, item.title)}
+                    style={{
+                      padding: 0,
+                      margin: 0,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      backgroundColor: "#111",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <img
+                      src={item.src}
+                      alt={item.title}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "16 / 9",
+                        objectFit: "cover",
+                        display: "block",
+                        backgroundColor: "#111",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        color: "#fff",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        backgroundColor: "rgba(255,255,255,0.04)",
+                      }}
+                    >
+                      {item.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
 
             {previewType === "video" && (

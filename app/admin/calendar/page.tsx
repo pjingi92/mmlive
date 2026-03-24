@@ -120,6 +120,7 @@ export default function AdminCalendarPage() {
   const [saving, setSaving] = useState(false);
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [reservationLoading, setReservationLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [isHoliday, setIsHoliday] = useState(false);
   const [blockedTimes, setBlockedTimes] = useState<string[]>([]);
@@ -486,6 +487,19 @@ export default function AdminCalendarPage() {
   }, []);
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!selectedKey) {
       setIsHoliday(false);
       setBlockedTimes([]);
@@ -503,8 +517,8 @@ export default function AdminCalendarPage() {
   }, [isHoliday]);
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
+    <main className="min-h-screen overflow-x-hidden bg-black text-white">
+      <section className="mx-auto w-full max-w-7xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8">
           <div className="flex items-center justify-between gap-3">
             <Link
@@ -529,7 +543,7 @@ export default function AdminCalendarPage() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-4 shadow-2xl sm:p-6 md:p-8">
+          <div className="min-w-0 rounded-[28px] border border-white/10 bg-[#111111] p-3 shadow-2xl sm:p-6 md:p-8">
             <div className="mb-5 flex flex-wrap gap-2 sm:gap-3">
               <div className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-300 sm:text-sm">
                 운영 가능
@@ -548,20 +562,20 @@ export default function AdminCalendarPage() {
               </div>
             </div>
 
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/60 sm:text-sm">
+            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60 sm:px-4 sm:text-sm">
               {calendarLoading || reservationLoading
                 ? "달력 상태 불러오는 중..."
                 : "빨간 날짜는 하루 휴무, 노란 날짜는 일부 시간 차단, 파란/보라 표시로 예약 문의와 확정 일정을 함께 확인할 수 있어."}
             </div>
 
-            <div className="booking-dark-calendar overflow-x-auto">
+            <div className="booking-dark-calendar min-w-0 overflow-hidden">
               <DayPicker
                 mode="single"
                 selected={selected}
                 onSelect={handleSelectDate}
                 locale={ko}
                 showOutsideDays
-                defaultMonth={new Date() }
+                defaultMonth={new Date()}
                 disabled={{ before: today }}
                 modifiers={modifiers}
                 modifiersClassNames={{
@@ -571,23 +585,90 @@ export default function AdminCalendarPage() {
                   adminConfirmedReservation: "admin-confirmed-reserved-day",
                   adminPendingReservation: "admin-pending-reserved-day",
                 }}
-                className="w-full"
+                className="w-full max-w-full"
+                styles={
+                  isMobile
+                    ? {
+                        months: {
+                          width: "100%",
+                        },
+                        month: {
+                          width: "100%",
+                        },
+                        month_grid: {
+                          width: "100%",
+                          maxWidth: "100%",
+                          tableLayout: "fixed",
+                          borderCollapse: "collapse",
+                        },
+                        weekdays: {
+                          width: "100%",
+                        },
+                        weekday: {
+                          width: "14.2857%",
+                          padding: "0 0 6px 0",
+                          fontSize: "10px",
+                          textAlign: "center",
+                        },
+                        week: {
+                          width: "100%",
+                        },
+                        day: {
+                          width: "14.2857%",
+                          padding: "1px",
+                          textAlign: "center",
+                        },
+                        day_button: {
+                          width: "100%",
+                          maxWidth: "100%",
+                          height: "34px",
+                          fontSize: "12px",
+                          borderRadius: "10px",
+                          margin: "0 auto",
+                        },
+                        month_caption: {
+                          marginBottom: "12px",
+                        },
+                        caption_label: {
+                          fontSize: "15px",
+                          fontWeight: "600",
+                        },
+                        nav: {
+                          gap: "4px",
+                        },
+                        button_previous: {
+                          width: "32px",
+                          height: "32px",
+                          minWidth: "32px",
+                          minHeight: "32px",
+                          padding: "0",
+                        },
+                        button_next: {
+                          width: "32px",
+                          height: "32px",
+                          minWidth: "32px",
+                          minHeight: "32px",
+                          padding: "0",
+                        },
+                      }
+                    : undefined
+                }
                 classNames={{
                   months: "flex justify-center",
-                  month: "w-full",
+                  month: "w-full min-w-0",
                   month_caption:
-                    "mb-6 flex items-center justify-between text-white",
-                  caption_label: "text-lg font-semibold sm:text-2xl",
-                  nav: "flex items-center gap-2",
+                    "mb-4 flex items-center justify-between text-white sm:mb-6",
+                  caption_label: "text-base font-semibold sm:text-2xl",
+                  nav: "flex items-center gap-1 sm:gap-2",
                   button_previous:
-                    "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
+                    "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
                   button_next:
-                    "h-10 w-10 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10",
-                  weekdays: "mb-2",
+                    "h-8 w-8 rounded-full border border-white/10 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:w-10",
+                  weekdays: "mb-1 sm:mb-2",
                   weekday:
-                    "text-xs sm:text-sm font-medium text-white/45 pb-2",
+                    "pb-2 text-[11px] font-medium text-white/45 sm:text-sm",
                   week: "mt-1 sm:mt-2",
-                  day: "p-1 sm:p-2",
+                  day: "p-0 sm:p-2",
                   selected: "selected-day",
                   today: "today-day",
                 }}
@@ -600,7 +681,7 @@ export default function AdminCalendarPage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-[#111111] p-5 shadow-2xl sm:p-6">
+          <div className="min-w-0 rounded-[28px] border border-white/10 bg-[#111111] p-5 shadow-2xl sm:p-6">
             <h2 className="text-lg font-semibold sm:text-xl">선택한 날짜 관리</h2>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5">

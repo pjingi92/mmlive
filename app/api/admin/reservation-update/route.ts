@@ -1,4 +1,7 @@
 import { google } from "googleapis";
+import crypto from "node:crypto";
+
+const COOKIE_NAME = "admin_auth";
 
 const PRICES = {
   base: 600000,
@@ -10,6 +13,92 @@ const PRICES = {
   pip: 150000,
   intro: 150000,
 };
+
+function toBase64(value: string) {
+  return value.replace(/-/g, "+").replace(/_/g, "/");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = toBase64(value);
+  const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+  return Buffer.from(normalized + padding, "base64").toString("utf-8");
+}
+
+function toBase64Url(value: Buffer | string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function verifySignedToken(token: string, secret: string) {
+  try {
+    const parts = token.split(".");
+
+    if (parts.length !== 2) {
+      return false;
+    }
+
+    const [payloadBase64, signatureBase64] = parts;
+
+    if (!payloadBase64 || !signatureBase64) {
+      return false;
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payloadBase64)
+      .digest();
+
+    const expectedSignatureBase64 = toBase64Url(expectedSignature);
+
+    const expectedBuffer = Buffer.from(expectedSignatureBase64);
+    const actualBuffer = Buffer.from(signatureBase64);
+
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+
+    if (!crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return false;
+    }
+
+    const payloadText = decodeBase64Url(payloadBase64);
+    const payload = JSON.parse(payloadText);
+
+    if (payload?.role !== "admin") {
+      return false;
+    }
+
+    if (typeof payload?.exp !== "number") {
+      return false;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp < now) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCookieValue(cookieHeader: string, cookieName: string) {
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(`${cookieName}=`)) {
+      return decodeURIComponent(trimmed.slice(cookieName.length + 1));
+    }
+  }
+
+  return "";
+}
 
 function normalizeSheetName(value: string) {
   return value.replace(/\s+/g, "").trim();
@@ -33,7 +122,7 @@ function getTodayKST() {
     day: "2-digit",
   });
 
-  return formatter.format(now); // YYYY-MM-DD
+  return formatter.format(now);
 }
 
 function isDateInRange(today: string, startDate: string, endDate: string) {
@@ -41,6 +130,43 @@ function isDateInRange(today: string, startDate: string, endDate: string) {
   if (startDate && today < startDate) return false;
   if (endDate && today > endDate) return false;
   return true;
+}
+
+function normalizeTimeString(time: string) {
+  const text = String(time || "").trim();
+  if (!text) return "";
+
+  const match = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return text;
+
+  const hour = String(Number(match[1] || 0)).padStart(2, "0");
+  const minute = String(Number(match[2] || 0)).padStart(2, "0");
+
+  return `${hour}:${minute}`;
+}
+
+function addHoursToTimeString(time: string, hoursToAdd: number) {
+  const normalized = normalizeTimeString(time);
+  const [hourText, minuteText] = String(normalized || "00:00").split(":");
+  const baseHour = Number(hourText || 0);
+  const minute = Number(minuteText || 0);
+
+  const totalHour = baseHour + hoursToAdd;
+  const paddedHour = String(totalHour).padStart(2, "0");
+  const paddedMinute = String(minute).padStart(2, "0");
+
+  return `${paddedHour}:${paddedMinute}`;
+}
+
+function buildTimeRange(startTime: string, hours: number) {
+  const normalizedStartTime = normalizeTimeString(startTime);
+  if (!normalizedStartTime) return "";
+
+  const safeHours = Number(hours || 0);
+  if (safeHours <= 0) return normalizedStartTime;
+
+  const endTime = addHoursToTimeString(normalizedStartTime, safeHours);
+  return `${normalizedStartTime}~${endTime}`;
 }
 
 async function getSheetsClient() {
@@ -229,10 +355,25 @@ function calculateFinalTotal({
 
 export async function POST(req: Request) {
   try {
+    const cookieHeader = req.headers.get("cookie") || "";
+    const token = getCookieValue(cookieHeader, COOKIE_NAME);
+    const sessionSecret = String(process.env.ADMIN_SESSION_SECRET || "").trim();
+
+    if (!sessionSecret || !verifySignedToken(token, sessionSecret)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
 
     const {
       reservationNumber,
+      institutionName,
       eventName,
       eventDate,
       startTime,
@@ -258,6 +399,11 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const normalizedInstitutionName = String(institutionName || "").trim();
+    const normalizedEventName = String(eventName || "").trim();
+    const normalizedEventDate = String(eventDate || "").trim();
+    const normalizedStartTime = normalizeTimeString(String(startTime || "").trim());
 
     const normalizedHours = Number(hours || 1);
     const normalizedCamera = Number(camera || 1);
@@ -291,7 +437,7 @@ export async function POST(req: Request) {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${safeSheetName}!A:Q`,
+      range: `${safeSheetName}!A:R`,
     });
 
     const rows = response.data.values || [];
@@ -317,24 +463,27 @@ export async function POST(req: Request) {
       intro: normalizedIntro,
     });
 
+    const timeRange = buildTimeRange(normalizedStartTime, normalizedHours);
+
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${safeSheetName}!G${actualRowNumber}:Q${actualRowNumber}`,
+      range: `${safeSheetName}!G${actualRowNumber}:R${actualRowNumber}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            eventName || "", // G 행사명
-            eventDate || "", // H 촬영날짜
-            startTime || "", // I 시작시간
-            `${normalizedHours}시간`, // J 촬영시간
-            `${normalizedCamera}대`, // K 카메라대수
-            editText, // L 편집
-            optionSummary, // M 옵션
-            `${Number(calculated.finalTotal).toLocaleString()}원`, // N 예상견적
-            request || "", // O 요청사항
-            adminMemo || "", // P 관리자메모
-            validDiscountPercent > 0 ? normalizedDiscountCode : "", // Q 할인코드
+            normalizedInstitutionName || "",
+            normalizedEventName || "",
+            normalizedEventDate || "",
+            timeRange || "",
+            `${normalizedHours}시간`,
+            `${normalizedCamera}대`,
+            editText,
+            optionSummary,
+            `${Number(calculated.finalTotal).toLocaleString()}원`,
+            request || "",
+            adminMemo || "",
+            validDiscountPercent > 0 ? normalizedDiscountCode : "",
           ],
         ],
       },
@@ -348,6 +497,12 @@ export async function POST(req: Request) {
         discountPercent: validDiscountPercent,
         discountAmount: calculated.discountAmount,
         finalTotal: calculated.finalTotal,
+      },
+      saved: {
+        institutionName: normalizedInstitutionName,
+        eventName: normalizedEventName,
+        eventDate: normalizedEventDate,
+        time: timeRange,
       },
     });
   } catch (error: any) {

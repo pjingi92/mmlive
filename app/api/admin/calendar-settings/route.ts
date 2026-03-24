@@ -1,4 +1,7 @@
 import { google } from "googleapis";
+import crypto from "node:crypto";
+
+const COOKIE_NAME = "admin_auth";
 
 type CalendarSettingItem = {
   date: string;
@@ -7,6 +10,104 @@ type CalendarSettingItem = {
   status: string;
   note: string;
 };
+
+function toBase64(value: string) {
+  return value.replace(/-/g, "+").replace(/_/g, "/");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = toBase64(value);
+  const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
+  return Buffer.from(normalized + padding, "base64").toString("utf-8");
+}
+
+function toBase64Url(value: Buffer | string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function verifySignedToken(token: string, secret: string) {
+  try {
+    const parts = token.split(".");
+
+    if (parts.length !== 2) {
+      return false;
+    }
+
+    const [payloadBase64, signatureBase64] = parts;
+
+    if (!payloadBase64 || !signatureBase64) {
+      return false;
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payloadBase64)
+      .digest();
+
+    const expectedSignatureBase64 = toBase64Url(expectedSignature);
+
+    const expectedBuffer = Buffer.from(expectedSignatureBase64);
+    const actualBuffer = Buffer.from(signatureBase64);
+
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+
+    if (!crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
+      return false;
+    }
+
+    const payloadText = decodeBase64Url(payloadBase64);
+    const payload = JSON.parse(payloadText);
+
+    if (payload?.role !== "admin") {
+      return false;
+    }
+
+    if (typeof payload?.exp !== "number") {
+      return false;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp < now) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCookieValue(cookieHeader: string, cookieName: string) {
+  const cookies = cookieHeader.split(";");
+
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(`${cookieName}=`)) {
+      return decodeURIComponent(trimmed.slice(cookieName.length + 1));
+    }
+  }
+
+  return "";
+}
+
+function requireAdmin(req: Request) {
+  const cookieHeader = req.headers.get("cookie") || "";
+  const token = getCookieValue(cookieHeader, COOKIE_NAME);
+  const sessionSecret = String(process.env.ADMIN_SESSION_SECRET || "").trim();
+
+  if (!sessionSecret || !verifySignedToken(token, sessionSecret)) {
+    return false;
+  }
+
+  return true;
+}
 
 function getGoogleSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -23,7 +124,6 @@ function getGoogleSheets() {
   });
 }
 
-// 🔧 FIX: 8:00 / 08:00 / 9:00 / 09:00 형식을 모두 HH:mm 으로 통일
 function normalizeTime(value: string) {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -43,13 +143,27 @@ function normalizeTime(value: string) {
 
 export async function GET(req: Request) {
   try {
+    if (!requireAdmin(req)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const sheetName = "calendar_settings";
 
     if (!spreadsheetId) {
-      return new Response("GOOGLE_SHEET_ID가 설정되지 않았습니다.", {
-        status: 500,
-      });
+      return Response.json(
+        {
+          success: false,
+          message: "GOOGLE_SHEET_ID가 설정되지 않았습니다.",
+        },
+        { status: 500 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -73,7 +187,7 @@ export async function GET(req: Request) {
       .map((row: any[]) => ({
         date: row?.[0] || "",
         type: row?.[1] || "",
-        time: normalizeTime(row?.[2] || ""), // 🔧 FIX: 조회 시에도 시간 형식 통일
+        time: normalizeTime(row?.[2] || ""),
         status: row?.[3] || "",
         note: row?.[4] || "",
       }));
@@ -86,21 +200,39 @@ export async function GET(req: Request) {
     console.error("[GET /api/admin/calendar-settings] 오류:", error);
     console.error("[GET /api/admin/calendar-settings] 메시지:", error?.message);
 
-    return new Response(error?.message || "calendar-settings 조회 실패", {
-      status: 500,
-    });
+    return Response.json(
+      {
+        success: false,
+        message: error?.message || "calendar-settings 조회 실패",
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: Request) {
   try {
+    if (!requireAdmin(req)) {
+      return Response.json(
+        {
+          success: false,
+          message: "권한이 없습니다. 관리자 로그인 후 다시 시도해주세요.",
+        },
+        { status: 401 }
+      );
+    }
+
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     const sheetName = "calendar_settings";
 
     if (!spreadsheetId) {
-      return new Response("GOOGLE_SHEET_ID가 설정되지 않았습니다.", {
-        status: 500,
-      });
+      return Response.json(
+        {
+          success: false,
+          message: "GOOGLE_SHEET_ID가 설정되지 않았습니다.",
+        },
+        { status: 500 }
+      );
     }
 
     const body = await req.json();
@@ -137,7 +269,7 @@ export async function POST(req: Request) {
       .map((row: any[]) => [
         String(row?.[0] || "").trim(),
         String(row?.[1] || "").trim(),
-        normalizeTime(String(row?.[2] || "").trim()), // 🔧 FIX: 기존 데이터도 다시 쓸 때 시간 통일
+        normalizeTime(String(row?.[2] || "").trim()),
         String(row?.[3] || "").trim(),
         String(row?.[4] || "").trim(),
       ]);
@@ -145,7 +277,7 @@ export async function POST(req: Request) {
     const newRows = items.map((item: CalendarSettingItem) => [
       date,
       String(item?.type || "").trim(),
-      normalizeTime(String(item?.time || "").trim()), // 🔧 FIX: 저장 시 항상 HH:mm 으로 저장
+      normalizeTime(String(item?.time || "").trim()),
       String(item?.status || "").trim(),
       String(item?.note || "").trim(),
     ]);
@@ -160,7 +292,7 @@ export async function POST(req: Request) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `${sheetName}!A1:E${finalRows.length}`,
-      valueInputOption: "RAW", // 🔧 FIX: USER_ENTERED 대신 RAW로 넣어서 08:00 -> 8:00 자동변환 방지
+      valueInputOption: "RAW",
       requestBody: {
         values: finalRows,
       },

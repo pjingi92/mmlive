@@ -66,4 +66,10 @@ body {
 .booking-dark-calendar .booking-holiday .rdp-day_button {
   background: rgba(255,255,255,0.05);
   opacity: 0.4;
+}html {
+  -webkit-touch-callout: none;
+}
+
+body {
+  -webkit-text-size-adjust: 100%;
 }
