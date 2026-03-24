@@ -21,9 +21,6 @@ export const metadata: Metadata = {
     email: false,
     address: false,
   },
-  verification: {
-    naver: "739ff47c8df6b7c7b4ff37a31705b098c4f3fe94",
-  },
 };
 
 export const viewport: Viewport = {
@@ -34,10 +31,16 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{
-    children: React.ReactNode;
-  }>) {
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="ko" style={{ WebkitTouchCallout: "none" }}>
+      <head>
+        <meta
+          name="naver-site-verification"
+          content="739ff47c8df6b7c7b4ff37a31705b098c4f3fe94"
+        />
+      </head>
       <body
         style={{ WebkitTextSizeAdjust: "100%" }}
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
