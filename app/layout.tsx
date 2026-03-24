@@ -13,12 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "무명필름",
-  description: "무명필름 촬영 및 라이브 송출 예약 시스템",
+  title: "무명필름 | 서울대학교 촬영 및 라이브 송출 - MMLIVE",
+  description:
+    "무명필름이 운영하는 학술행사 촬영 및 라이브 송출 서비스 MMLIVE",
   formatDetection: {
     telephone: false,
     email: false,
     address: false,
+  },
+  verification: {
+    naver: "739ff47c8df6b7c7b4ff37a31705b098c4f3fe94",
   },
 };
 
@@ -30,8 +34,8 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
-}>) {
+    children: React.ReactNode;
+  }>) {
   return (
     <html lang="ko" style={{ WebkitTouchCallout: "none" }}>
       <body
