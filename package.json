@@ -13,6 +13,8 @@
     "@sparticuz/chromium": "^143.0.4",
     "date-fns": "^4.1.0",
     "googleapis": "^171.4.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "next": "16.1.6",
     "nodemailer": "^8.0.2",
     "playwright": "^1.58.2",

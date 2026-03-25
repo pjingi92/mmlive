@@ -175,6 +175,55 @@ async function getStampDataUrl() {
   }
 }
 
+async function getEmbeddedKoreanFontCss() {
+  const candidates = [
+    {
+      filePath: path.join(process.cwd(), "public", "fonts", "NotoSansKR-Regular.ttf"),
+      fontFamily: "EmbeddedKoreanFont",
+      format: "truetype",
+    },
+    {
+      filePath: path.join(process.cwd(), "public", "fonts", "NanumGothic.ttf"),
+      fontFamily: "EmbeddedKoreanFont",
+      format: "truetype",
+    },
+    {
+      filePath: path.join(process.cwd(), "public", "fonts", "malgun.ttf"),
+      fontFamily: "EmbeddedKoreanFont",
+      format: "truetype",
+    },
+    {
+      filePath: path.join(process.cwd(), "public", "fonts", "NotoSansKR-Regular.otf"),
+      fontFamily: "EmbeddedKoreanFont",
+      format: "opentype",
+    },
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const fontFile = await fs.readFile(candidate.filePath);
+      const base64Font = fontFile.toString("base64");
+
+      return `
+        @font-face {
+          font-family: '${candidate.fontFamily}';
+          src: url(data:font/${candidate.format};base64,${base64Font}) format('${candidate.format}');
+          font-weight: 400;
+          font-style: normal;
+        }
+      `;
+    } catch {
+      continue;
+    }
+  }
+
+  console.warn(
+    "[send-estimate] 한글 폰트 파일을 찾지 못했습니다. public/fonts/NotoSansKR-Regular.ttf 파일을 추가해주세요."
+  );
+
+  return "";
+}
+
 function buildEstimateHtml({
   reservationNumber,
   institutionName,
@@ -186,6 +235,7 @@ function buildEstimateHtml({
   total,
   includeStamp,
   stampDataUrl,
+  embeddedFontCss,
 }: {
   reservationNumber: string;
   institutionName: string;
@@ -197,6 +247,7 @@ function buildEstimateHtml({
   total: number;
   includeStamp: boolean;
   stampDataUrl: string;
+  embeddedFontCss: string;
 }) {
   const companyName = "무명필름";
   const companyOwner = "문성민";
@@ -227,6 +278,8 @@ function buildEstimateHtml({
       <head>
         <meta charSet="utf-8" />
         <style>
+          ${embeddedFontCss}
+
           @page {
             size: A4;
             margin: 22mm 16mm 18mm 16mm;
@@ -239,7 +292,7 @@ function buildEstimateHtml({
           div,
           span,
           p {
-            font-family: "Noto Sans CJK KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", Arial, sans-serif;
+            font-family: "EmbeddedKoreanFont", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
           }
 
           body {
@@ -681,6 +734,7 @@ export async function POST(req: Request) {
     const includeStamp = !!body.includeStamp;
 
     const stampDataUrl = includeStamp ? await getStampDataUrl() : "";
+    const embeddedFontCss = await getEmbeddedKoreanFontCss();
 
     const pdfHtml = buildEstimateHtml({
       reservationNumber,
@@ -693,6 +747,7 @@ export async function POST(req: Request) {
       total: finalTotal,
       includeStamp,
       stampDataUrl,
+      embeddedFontCss,
     });
 
     const pdfBuffer = await renderPdfFromHtml(pdfHtml);
