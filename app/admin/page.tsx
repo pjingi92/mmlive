@@ -862,6 +862,8 @@ export default function AdminPage() {
         discountAmount: documentForm.discountAmount || "0",
         finalTotal: String(documentTotal),
       };
+      
+      console.log("[admin] 발송 payload:", payload);
 
       const res = await fetch(`${origin}${endpoint}`, {
         method: "POST",

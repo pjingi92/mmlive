@@ -621,14 +621,32 @@ function buildStatementHtml({
   `;
 }
 
-async function renderPdfFromHtml(html: string) {
-  const executablePath = await chromium.executablePath();
+function getLocalChromePath() {
+  const candidates = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  ];
 
-  const browser = await puppeteer.launch({
-    args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
-    executablePath,
-    headless: true,
-  });
+  return candidates[0];
+}
+
+async function renderPdfFromHtml(html: string) {
+  const isLocal = process.env.NODE_ENV !== "production";
+
+  const browser = await puppeteer.launch(
+    isLocal
+      ? {
+          headless: true,
+          executablePath: getLocalChromePath(),
+        }
+      : {
+          args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+          executablePath: await chromium.executablePath(),
+          headless: true,
+        }
+  );
 
   try {
     const page = await browser.newPage();
@@ -668,6 +686,9 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as SendStatementBody;
+
+    console.log("[send-statement] body:", body);
+    console.log("[send-statement] items:", body.items);
 
     const to = normalizeEmail(body.to);
     const adminEmail = normalizeEmail(process.env.GMAIL_USER);
