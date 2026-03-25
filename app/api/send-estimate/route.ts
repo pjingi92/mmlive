@@ -499,6 +499,14 @@ function buildEstimateHtml({
             </tbody>
           </table>
 
+          <div style="margin-top:8px; margin-bottom:8px; font-size:12px;">
+  DEBUG items count: ${items.length}
+</div>
+
+<div style="margin-bottom:8px; font-size:12px; word-break:break-all;">
+  DEBUG names: ${items.map((item) => escapeHtml(item.name)).join(" | ")}
+</div>
+
           <div class="summary-box">
             <div class="summary-row">
               <div class="summary-label">품목 합계</div>
