@@ -215,7 +215,7 @@ export async function POST(req: Request) {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!A2:Q`,
+      range: `${sheetName}!A2:R`,
     });
 
     const rows = response.data.values || [];
@@ -234,17 +234,18 @@ export async function POST(req: Request) {
 
     const row = rows[rowIndex];
 
-    const name = row[3] || "";
+    const name = String(row[3] || "");
     const email = normalizeEmail(row[4] || "");
-    const eventName = row[6] || "";
-    const eventDate = row[7] || "";
-    const rawTimeValue = row[8] || "";
-    const hours = row[9] || "";
-    const camera = row[10] || "";
-    const edit = row[11] || "미선택";
-    const options = row[12] || "없음";
-    const total = row[13] || "";
-    const request = row[14] || "-";
+    const institutionName = String(row[6] || "");
+    const eventName = String(row[7] || "");
+    const eventDate = String(row[8] || "");
+    const rawTimeValue = String(row[9] || "");
+    const hours = String(row[10] || "");
+    const camera = String(row[11] || "");
+    const edit = String(row[12] || "미선택");
+    const options = String(row[13] || "없음");
+    const total = String(row[14] || "");
+    const request = String(row[15] || "-");
 
     const hourNumber = parseHoursToNumber(hours);
     const timeRange = buildTimeRange(rawTimeValue, hourNumber);
@@ -268,6 +269,9 @@ export async function POST(req: Request) {
       reservationNumber,
       status,
       actualRowNumber,
+      institutionName,
+      eventName,
+      eventDate,
       rawTimeValue,
       hours,
       timeRange,
@@ -301,6 +305,7 @@ export async function POST(req: Request) {
           <p>무명필름 촬영 예약이 확정되었습니다.</p>
           <hr />
           <p><strong>예약번호:</strong> ${reservationNumber}</p>
+          <p><strong>기관명:</strong> ${institutionName || "-"}</p>
           <p><strong>행사명:</strong> ${eventName}</p>
           <p><strong>촬영 날짜:</strong> ${eventDate}</p>
           <p><strong>시간:</strong> ${timeRange || rawTimeValue}</p>
@@ -308,7 +313,7 @@ export async function POST(req: Request) {
           <p><strong>카메라 대수:</strong> ${camera}</p>
           <p><strong>편집:</strong> ${edit}</p>
           <p><strong>추가 옵션:</strong> ${options}</p>
-          <p><strong>추가 요청사항:</strong><br/>${request}</p>
+          <p><strong>추가 요청사항:</strong><br/>${request || "-"}</p>
           <hr />
           <p><strong>예상 견적:</strong> ${total}</p>
           <br />
@@ -327,6 +332,7 @@ export async function POST(req: Request) {
           <p>다른 일정으로 촬영을 원하시면 언제든 다시 문의 부탁드립니다.</p>
           <hr />
           <p><strong>예약번호:</strong> ${reservationNumber}</p>
+          <p><strong>기관명:</strong> ${institutionName || "-"}</p>
           <p><strong>행사명:</strong> ${eventName}</p>
           <p><strong>촬영 날짜:</strong> ${eventDate}</p>
           <p><strong>시간:</strong> ${timeRange || rawTimeValue}</p>
