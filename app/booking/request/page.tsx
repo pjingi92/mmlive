@@ -1121,7 +1121,7 @@ function BookingRequestPageContent() {
                     type="button"
                     onClick={() =>
                       openVideoPreview(
-                        "https://www.youtube.com/embed/GnbDIl0qORU",
+                        "https://www.youtube.com/embed/zsWsmibRcaQ",
                         "행사 인트로 예시 영상"
                       )
                     }

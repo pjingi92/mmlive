@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
-import { chromium } from "playwright";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "node:crypto";
@@ -621,13 +622,18 @@ function buildStatementHtml({
 }
 
 async function renderPdfFromHtml(html: string) {
-  const browser = await chromium.launch({
+  const executablePath = await chromium.executablePath();
+
+  const browser = await puppeteer.launch({
+    args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
     headless: true,
   });
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.setContent(html, { waitUntil: "networkidle0" });
 
     const pdf = await page.pdf({
       format: "A4",

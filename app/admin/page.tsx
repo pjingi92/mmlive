@@ -841,6 +841,11 @@ export default function AdminPage() {
           ? "/api/send-estimate"
           : "/api/send-statement";
 
+      const origin =
+        typeof window !== "undefined" && window.location.origin
+          ? window.location.origin
+          : process.env.NEXT_PUBLIC_SITE_URL || "";
+
       const payload = {
         to: documentTargetEmail,
         reservationNumber: documentTargetReservationNumber,
@@ -858,25 +863,33 @@ export default function AdminPage() {
         finalTotal: String(documentTotal),
       };
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${origin}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
+        cache: "no-store",
         body: JSON.stringify(payload),
       });
 
       const result = await res.json().catch(() => null);
 
       if (!res.ok || !result?.success) {
-        throw new Error(result?.message || `${getDocumentTitle(documentType)} 발송 실패`);
+        throw new Error(
+          result?.message ||
+            `${getDocumentTitle(documentType)} 발송 실패 (status: ${res.status})`
+        );
       }
 
       alert(`${getDocumentTitle(documentType)}가 발송되었습니다.`);
       closeDocumentEditor();
-    } catch (error) {
-      console.error(error);
-      alert(`${getDocumentTitle(documentType)} 발송 중 오류가 발생했습니다.`);
+    } catch (error: any) {
+      console.error("[handleDocumentSend] 오류:", error);
+      alert(
+        error?.message ||
+          `${getDocumentTitle(documentType)} 발송 중 오류가 발생했습니다.`
+      );
     } finally {
       setSendingDocument(false);
     }
