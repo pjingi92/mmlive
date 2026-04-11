@@ -21,7 +21,7 @@ export default function Home() {
             </div>
 
             <h1 className="home-main-title">
-              서울대학교 촬영 및
+              교육기관·기업 행사 촬영 및
               <br />
               라이브 송출 예약 시스템
             </h1>
@@ -196,7 +196,7 @@ export default function Home() {
             </p>
             <h2 className="home-services-title">예약 가능한 주요 서비스</h2>
             <p className="home-services-desc">
-              서울대학교 행사 운영에 맞춰 촬영, 라이브 송출, 디자인 제작까지
+              행사 운영에 맞춰 촬영, 라이브 송출, 디자인 제작까지
               필요한 항목을 조합해 예약할 수 있습니다.
             </p>
           </div>
