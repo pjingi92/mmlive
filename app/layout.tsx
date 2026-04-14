@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "서울대학교 촬영 및 라이브 송출 | 무명필름 MMLIVE",
+  title: "촬영 및 라이브 송출 | 무명필름 MMLIVE",
   description:
     "세미나 포럼 학회 강연 촬영과 유튜브 줌 라이브 송출 전문 서비스. PIP 디자인과 행사 인트로 제작까지 무명필름 MMLIVE에서 제공합니다.",
   formatDetection: {
