@@ -315,7 +315,7 @@ function BookingRequestPageContent() {
   }
 
   const extraHourPrice = hours > 1 ? (hours - 1) * PRICES.extraHour : 0;
-  const cameraPrice = camera > 1 ? PRICES.extraCamera : 0;
+  const cameraPrice = camera > 1 ? (camera - 1) * PRICES.extraCamera : 0;
   const editPrice = edit ? PRICES.edit : 0;
   const zoomPrice = zoom ? PRICES.zoom : 0;
   const youtubePrice = youtube ? PRICES.youtube : 0;
@@ -1025,6 +1025,54 @@ function BookingRequestPageContent() {
                       onChange={() => setCamera(2)}
                     />
                     <span style={{ marginLeft: 10 }}>2대 선택</span>
+                  </label>
+                </div>
+
+                <div style={optionCardStyle}>
+                  <div style={optionHeaderStyle}>
+                    <div>
+                      <p style={optionTitleStyle}>카메라 3대 (+600,000원)</p>
+                      <p style={optionDescStyle}>
+                        전체 화면, 발표자 클로즈업, 질문자 화면까지 담는 구성입니다.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openGalleryPreview(
+                        [
+                          {
+                            src: "/options/camera-3-1.png",
+                            title: "카메라 3대 예시 1",
+                          },
+                          {
+                            src: "/options/camera-3-2.png",
+                            title: "카메라 3대 예시 2",
+                          },
+                          {
+                            src: "/options/camera-3-3.png",
+                            title: "카메라 3대 예시 3",
+                          },
+                        ],
+                        "카메라 3대 예시"
+                      )
+                    }
+                    style={previewButtonStyle}
+                  >
+                    예시 3 보기
+                  </button>
+
+                  <label style={radioCardStyle}>
+                    <input
+                      type="radio"
+                      name="카메라대수UI"
+                      value={3}
+                      checked={camera === 3}
+                      onChange={() => setCamera(3)}
+                    />
+                    <span style={{ marginLeft: 10 }}>3대 선택</span>
                   </label>
                 </div>
               </div>
