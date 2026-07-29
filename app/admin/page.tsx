@@ -288,8 +288,8 @@ function createDocumentItemsFromValues(values: {
   if (values.camera > 1) {
     items.push({
       id: `item-${index++}`,
-      name: "카메라 추가 1대",
-      amount: String(PRICES.extraCamera),
+      name: `카메라 추가 ${values.camera - 1}대`,
+      amount: String((values.camera - 1) * PRICES.extraCamera),
     });
   }
 
@@ -648,7 +648,7 @@ export default function AdminPage() {
 
     const extraHourPrice =
       editForm.hours > 1 ? (editForm.hours - 1) * PRICES.extraHour : 0;
-    const cameraPrice = editForm.camera > 1 ? PRICES.extraCamera : 0;
+    const cameraPrice = editForm.camera > 1 ? (editForm.camera - 1) * PRICES.extraCamera : 0;
     const editPrice = editForm.edit ? PRICES.edit : 0;
     const zoomPrice = editForm.zoom ? PRICES.zoom : 0;
     const youtubePrice = editForm.youtube ? PRICES.youtube : 0;
@@ -1708,6 +1708,7 @@ export default function AdminPage() {
                                 >
                                   <option value={1}>1대</option>
                                   <option value={2}>2대</option>
+                                  <option value={3}>3대</option>
                                 </select>
                               </div>
 
